@@ -24,10 +24,11 @@ Ansible   → installs k3s             CD  → kubectl apply to k3s
 
 In this repo's Settings → Secrets and variables → Actions:
 
-| Secret | Value |
-|---|---|
-| `AWS_ACCESS_KEY_ID` | AWS IAM access key |
+| Secret                  | Value              |
+|-------------------------|--------------------|
+| `AWS_ACCESS_KEY_ID`     | AWS IAM access key |
 | `AWS_SECRET_ACCESS_KEY` | AWS IAM secret key |
+| `AWS_SESSION_TOKEN`     | AWS IAM secret key |
 
 ### 2. Provision infrastructure locally
 
