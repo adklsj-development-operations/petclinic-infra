@@ -30,7 +30,7 @@ provider "aws" {
 
 resource "aws_security_group" "petclinic" {
   name        = "petclinic-sg"
-  description = "Allow SSH, HTTP, and k3s API"
+  description = "Allow SSH, app, and monitoring"
 
   ingress {
     description = "SSH"
@@ -41,17 +41,25 @@ resource "aws_security_group" "petclinic" {
   }
 
   ingress {
-    description = "App NodePort"
-    from_port   = 30080
-    to_port     = 30080
+    description = "App"
+    from_port   = 8080
+    to_port     = 8080
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
-    description = "k3s API"
-    from_port   = 6443
-    to_port     = 6443
+    description = "Grafana"
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Prometheus"
+    from_port   = 9090
+    to_port     = 9090
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -75,6 +83,6 @@ resource "aws_instance" "petclinic" {
   }
 
   tags = {
-    Name = "petclinic-k3s"
+    Name = "petclinic"
   }
 }
