@@ -1,6 +1,11 @@
 .terraform/
 terraform.tfstate
 terraform.tfstate.backup
-*.tfvars
 .terraform.lock.hcl
+*.tfvars
+backend.hcl
+bootstrap/.terraform/
+bootstrap/.terraform.lock.hcl
+bootstrap/terraform.tfstate
+bootstrap/terraform.tfstate.backup
 /.idea/
