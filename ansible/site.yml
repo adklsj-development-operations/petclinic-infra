@@ -1,0 +1,55 @@
+---
+- name: Configure petclinic k3s node
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Wait for SSH to be available
+      wait_for_connection:
+        timeout: 120
+
+    - name: Update apt cache
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install prerequisites
+      apt:
+        name: [curl, ca-certificates]
+        state: present
+
+    - name: Install k3s
+      shell: curl -sfL https://get.k3s.io | sh -
+      args:
+        creates: /usr/local/bin/k3s
+
+    - name: Wait for k3s to be ready
+      command: kubectl get node
+      register: node_status
+      until: "'Ready' in node_status.stdout"
+      retries: 20
+      delay: 10
+
+    - name: Create .kube directory for ubuntu user
+      file:
+        path: /home/ubuntu/.kube
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: "0755"
+
+    - name: Copy kubeconfig for ubuntu user
+      copy:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: /home/ubuntu/.kube/config
+        remote_src: true
+        owner: ubuntu
+        group: ubuntu
+        mode: "0600"
+
+    - name: Set KUBECONFIG in ubuntu profile
+      lineinfile:
+        path: /home/ubuntu/.bashrc
+        line: 'export KUBECONFIG=/home/ubuntu/.kube/config'
+        state: present
