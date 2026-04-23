@@ -1,5 +1,5 @@
 ---
-- name: Configure petclinic k3s node
+- name: Configure petclinic server
   hosts: all
   become: true
   gather_facts: true
@@ -16,40 +16,87 @@
 
     - name: Install prerequisites
       apt:
-        name: [curl, ca-certificates]
+        name: [curl, ca-certificates, apt-transport-https, gnupg]
         state: present
 
-    - name: Install k3s
-      shell: curl -sfL https://get.k3s.io | sh -
+    # Docker
+    - name: Add Docker GPG key
+      shell: |
+        install -m 0755 -d /etc/apt/keyrings
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+          -o /etc/apt/keyrings/docker.asc
+        chmod a+r /etc/apt/keyrings/docker.asc
       args:
-        creates: /usr/local/bin/k3s
+        creates: /etc/apt/keyrings/docker.asc
 
-    - name: Wait for k3s to be ready
-      command: kubectl get node
-      register: node_status
-      until: "'Ready' in node_status.stdout"
-      retries: 20
-      delay: 10
+    - name: Add Docker apt repository
+      shell: |
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \
+          https://download.docker.com/linux/ubuntu \
+          $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+          > /etc/apt/sources.list.d/docker.list
+      args:
+        creates: /etc/apt/sources.list.d/docker.list
 
-    - name: Create .kube directory for ubuntu user
-      file:
-        path: /home/ubuntu/.kube
-        state: directory
-        owner: ubuntu
-        group: ubuntu
-        mode: "0755"
-
-    - name: Copy kubeconfig for ubuntu user
-      copy:
-        src: /etc/rancher/k3s/k3s.yaml
-        dest: /home/ubuntu/.kube/config
-        remote_src: true
-        owner: ubuntu
-        group: ubuntu
-        mode: "0600"
-
-    - name: Set KUBECONFIG in ubuntu profile
-      lineinfile:
-        path: /home/ubuntu/.bashrc
-        line: 'export KUBECONFIG=/home/ubuntu/.kube/config'
+    - name: Install Docker
+      apt:
+        name: [docker-ce, docker-ce-cli, containerd.io, docker-compose-plugin]
+        update_cache: true
         state: present
+
+    - name: Add ubuntu user to docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: true
+
+    - name: Start and enable Docker
+      service:
+        name: docker
+        state: started
+        enabled: true
+
+    # Monitoring stack
+    - name: Create monitoring config directory
+      file:
+        path: /opt/monitoring/grafana/provisioning/{{ item }}
+        state: directory
+        mode: "0755"
+      loop:
+        - datasources
+        - dashboards
+
+    - name: Copy Prometheus config
+      copy:
+        src: prometheus.yml
+        dest: /opt/monitoring/prometheus.yml
+        mode: "0644"
+
+    - name: Copy Grafana datasource provisioning
+      copy:
+        src: grafana/provisioning/datasources/prometheus.yml
+        dest: /opt/monitoring/grafana/provisioning/datasources/prometheus.yml
+        mode: "0644"
+
+    - name: Copy Grafana dashboard provisioning
+      copy:
+        src: grafana/provisioning/dashboards/dashboards.yml
+        dest: /opt/monitoring/grafana/provisioning/dashboards/dashboards.yml
+        mode: "0644"
+
+    - name: Copy Grafana dashboard JSON
+      copy:
+        src: grafana/provisioning/dashboards/petclinic.json
+        dest: /opt/monitoring/grafana/provisioning/dashboards/petclinic.json
+        mode: "0644"
+
+    - name: Copy monitoring docker-compose file
+      copy:
+        src: docker-compose.monitoring.yml
+        dest: /opt/monitoring/docker-compose.yml
+        mode: "0644"
+
+    - name: Start monitoring stack
+      shell: docker compose -f /opt/monitoring/docker-compose.yml up -d
+      args:
+        chdir: /opt/monitoring

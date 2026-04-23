@@ -1,0 +1,43 @@
+{
+  "title": "Petclinic",
+  "uid": "petclinic",
+  "schemaVersion": 38,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Container CPU Usage %",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "rate(container_cpu_usage_seconds_total{name=\"petclinic\"}[1m]) * 100",
+          "legendFormat": "CPU %"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Container Memory Usage (MB)",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "container_memory_usage_bytes{name=\"petclinic\"} / 1024 / 1024",
+          "legendFormat": "Memory MB"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "HTTP Requests per Second",
+      "gridPos": { "x": 0, "y": 8, "w": 24, "h": 8 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "rate(http_server_requests_seconds_count{job=\"petclinic\"}[1m])",
+          "legendFormat": "{{method}} {{uri}} {{status}}"
+        }
+      ]
+    }
+  ]
+}

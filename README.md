@@ -63,8 +63,9 @@ In this repo's Settings → Secrets and variables → Actions:
 | `AWS_SESSION_TOKEN` | AWS session token (if using temporary credentials) |
 | `TF_STATE_BUCKET` | Bootstrap output: `bucket_name` e.g. `yourname-petclinic-tfstate` |
 | `TF_STATE_DYNAMODB_TABLE` | Bootstrap output: `dynamodb_table` e.g. `yourname-petclinic-tfstate-lock` |
+| `EC2_SSH_PRIVATE_KEY` | `terraform output -raw private_key_pem` (after step 4) |
 
-These last two tell the CI workflow which S3 bucket and DynamoDB table to use for remote state — without them the workflow can't init Terraform.
+`TF_STATE_BUCKET` and `TF_STATE_DYNAMODB_TABLE` come from bootstrap. `EC2_SSH_PRIVATE_KEY` is available after `terraform apply` in step 4 — add it then.
 
 ### 4. Provision infrastructure
 
