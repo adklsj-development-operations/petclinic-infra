@@ -1,0 +1,98 @@
+name: Infra Provision and Configure
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  TF_VERSION: "1.9.0"
+  AWS_REGION: "us-east-1"
+
+jobs:
+  terraform:
+    name: Terraform
+    runs-on: ubuntu-latest
+    environment: production
+    defaults:
+      run:
+        working-directory: .
+
+    outputs:
+      public_ip: ${{ steps.tf_output.outputs.public_ip }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{secrets.AWS_SESSION_TOKEN}}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: terraform apply -auto-approve tfplan
+
+      - name: Get EC2 public IP
+        id: tf_output
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: echo "public_ip=$(terraform output -raw public_ip)" >> "$GITHUB_OUTPUT"
+
+  ansible:
+    name: Configure k3s with Ansible
+    needs: terraform
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Ansible
+        run: |
+          pip install --quiet ansible
+
+      - name: Write SSH private key
+        run: |
+          echo "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > /tmp/ec2_key.pem
+          chmod 600 /tmp/ec2_key.pem
+
+      - name: Wait for EC2 to be reachable
+        run: |
+          for i in $(seq 1 20); do
+            ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 \
+              -i /tmp/ec2_key.pem ubuntu@${{ needs.terraform.outputs.public_ip }} \
+              "echo ok" && break || sleep 15
+          done
+
+      - name: Run Ansible playbook
+        env:
+          ANSIBLE_CONFIG: ansible/ansible.cfg
+        run: |
+          ansible-playbook ansible/site.yml \
+            -i "${{ needs.terraform.outputs.public_ip }}," \
+            --private-key /tmp/ec2_key.pem \
+            -u ubuntu
+
+      - name: Clean up SSH key
+        if: always()
+        run: rm -f /tmp/ec2_key.pem
