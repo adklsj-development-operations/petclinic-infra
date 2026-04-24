@@ -1,0 +1,53 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: petclinic
+    folder: petclinic
+    interval: 1m
+    rules:
+      - uid: high-cpu
+        title: High CPU Usage
+        condition: C
+        for: 2m
+        annotations:
+          summary: Container CPU above 80%
+          description: petclinic container CPU has been above 80% for 2 minutes
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            model:
+              expr: rate(container_cpu_usage_seconds_total{name="petclinic"}[1m]) * 100
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [80]
+                  query:
+                    params: [A]
+
+      - uid: container-down
+        title: Petclinic Container Down
+        condition: C
+        for: 1m
+        annotations:
+          summary: Petclinic container is not running
+          description: No container metrics found for petclinic — container may be down
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            model:
+              expr: absent(container_memory_usage_bytes{name="petclinic"})
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
+                  query:
+                    params: [A]

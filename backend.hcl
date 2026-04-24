@@ -3,8 +3,8 @@
 #
 # Use the same prefix you used in bootstrap/terraform.tfvars
 
-bucket         = "YOUR_PREFIX-petclinic-tfstate"
+bucket         = "yourname-petclinic-tfstate"
 key            = "infra/terraform.tfstate"
 region         = "us-east-1"
 encrypt        = true
-dynamodb_table = "YOUR_PREFIX-petclinic-tfstate-lock"
+dynamodb_table = "yourname-petclinic-tfstate-lock"

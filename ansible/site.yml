@@ -57,7 +57,7 @@
         enabled: true
 
     # Monitoring stack
-    - name: Create monitoring config directory
+    - name: Create monitoring config directories
       file:
         path: /opt/monitoring/grafana/provisioning/{{ item }}
         state: directory
@@ -65,6 +65,7 @@
       loop:
         - datasources
         - dashboards
+        - alerting
 
     - name: Copy Prometheus config
       copy:
@@ -96,7 +97,19 @@
         dest: /opt/monitoring/docker-compose.yml
         mode: "0644"
 
+    - name: Copy Grafana alerting provisioning
+      copy:
+        src: grafana/provisioning/alerting/{{ item }}
+        dest: /opt/monitoring/grafana/provisioning/alerting/{{ item }}
+        mode: "0644"
+      loop:
+        - contactpoints.yml
+        - policies.yml
+        - rules.yml
+
     - name: Start monitoring stack
       shell: docker compose -f /opt/monitoring/docker-compose.yml up -d
       args:
         chdir: /opt/monitoring
+      environment:
+        SLACK_WEBHOOK_URL: "{{ slack_webhook_url }}"
