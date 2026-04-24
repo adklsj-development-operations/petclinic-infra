@@ -4,8 +4,8 @@ output "public_ip" {
 }
 
 output "app_url" {
-  description = "URL to reach the app via NodePort"
-  value       = "http://${aws_instance.petclinic.public_ip}:30080"
+  description = "URL to reach the app"
+  value       = "http://${aws_instance.petclinic.public_ip}:8080"
 }
 
 output "private_key_pem" {

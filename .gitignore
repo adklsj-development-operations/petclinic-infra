@@ -3,9 +3,5 @@ terraform.tfstate
 terraform.tfstate.backup
 .terraform.lock.hcl
 *.tfvars
-backend.hcl
-bootstrap/.terraform/
-bootstrap/.terraform.lock.hcl
-bootstrap/terraform.tfstate
-bootstrap/terraform.tfstate.backup
+ansible/vars.yml
 /.idea/

@@ -1,0 +1,6 @@
+# Copy to terraform.tfvars and fill in your values
+# terraform.tfvars is gitignored — never commit it
+
+region        = "us-east-1"
+instance_type = "t3.medium"
+ami_id        = "ami-0c7217cdde317cfec" # Ubuntu 22.04 us-east-1
