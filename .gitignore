@@ -1,7 +1,30 @@
+# Terraform
 .terraform/
+.terraform.lock.hcl
 terraform.tfstate
 terraform.tfstate.backup
-.terraform.lock.hcl
+*.tfplan
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
 *.tfvars
+
+# Ansible secrets
 ansible/vars.yml
-/.idea/
+
+# SSH keys
+*.pem
+*.pub
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+*.iml
+
+# Claude Code
+.claude/
